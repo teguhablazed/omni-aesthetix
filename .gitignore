@@ -39,3 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Omni AesthetiX Specific
+ENV_CHECK.md
+PROD_SEED.sql
+.gemini/
+brain/
+*.log
+
