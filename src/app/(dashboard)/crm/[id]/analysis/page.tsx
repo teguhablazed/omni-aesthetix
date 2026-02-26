@@ -51,7 +51,7 @@ export default function AIAnalysisPage({ params }: PageProps) {
                 if (sError) throw sError;
 
                 if (storageData) {
-                    const urls = storageData.map(file =>
+                    const urls = storageData.map((file: any) =>
                         supabase.storage.from("patient-photos").getPublicUrl(`${id}/${file.name}`).data.publicUrl
                     );
                     setPhotos(urls);

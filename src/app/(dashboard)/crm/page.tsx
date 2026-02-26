@@ -146,7 +146,7 @@ export default function CRMPage() {
             .list(`${patient.id}/`);
 
         if (storageData) {
-            const urls = storageData.map(file =>
+            const urls = storageData.map((file: any) =>
                 supabase.storage.from('patient-photos').getPublicUrl(`${patient.id}/${file.name}`).data.publicUrl
             );
             setPatientPhotos(urls);
