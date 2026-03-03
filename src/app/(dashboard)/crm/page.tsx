@@ -158,8 +158,9 @@ export default function CRMPage() {
         const today = new Date().toISOString().split('T')[0];
         const { data: outreachData } = await supabase
             .from("medical_records")
-            .select("*, patients(full_name)")
-            .eq("next_visit_recommendation", today);
+            .select("*, patients(full_name), treatments(name)")
+            .eq("next_visit_recommendation", today)
+            .eq("outreach_completed", false);
 
         setOutreachPatients(outreachData || []);
     };
@@ -481,9 +482,19 @@ export default function CRMPage() {
                                 <CardContent className="py-2">
                                     <div className="flex flex-wrap gap-4">
                                         {outreachPatients.map(op => (
-                                            <Badge key={op.id} variant="secondary" className="gap-2 px-3 py-1 cursor-pointer hover:bg-accent/20 transition-colors">
+                                            <Badge
+                                                key={op.id}
+                                                variant="secondary"
+                                                className="gap-2 px-3 py-1 cursor-pointer hover:bg-accent/20 transition-colors"
+                                                onClick={() => {
+                                                    const patient = patients.find(p => p.id === op.patient_id);
+                                                    if (patient) {
+                                                        setSelectedPatient(patient);
+                                                    }
+                                                }}
+                                            >
                                                 <Sparkles className="w-3 h-3 text-accent" />
-                                                {op.patients?.full_name} ({op.treatment_name || "Consultation"})
+                                                {op.patients?.full_name} ({op.treatments?.name || "Consultation"})
                                             </Badge>
                                         ))}
                                     </div>

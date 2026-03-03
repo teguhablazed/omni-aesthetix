@@ -36,6 +36,7 @@ export default function StockPage() {
     const [stocks, setStocks] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [aiLoading, setAiLoading] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
 
     // QR Features State
     const [isScannerOpen, setIsScannerOpen] = useState(false);
@@ -104,6 +105,12 @@ export default function StockPage() {
         const changeAmount = Number(stockUpdateAmount);
         const newAmount = type === 'in' ? currentAmount + changeAmount : currentAmount - changeAmount;
 
+        if (type === 'out' && newAmount < 0) {
+            toast.error("Cannot reduce stock below zero");
+            setIsUpdatingStock(false);
+            return;
+        }
+
         const { error } = await supabase
             .from('stocks')
             .update({ current_stock: newAmount })
@@ -121,13 +128,30 @@ export default function StockPage() {
         setIsUpdatingStock(false);
     };
 
-    const totalItems = useMemo(() =>
-        stocks.reduce((acc: number, stock: any) => acc + Number(stock.current_stock), 0),
-        [stocks]);
+    const filteredStocks = useMemo(
+        () =>
+            stocks.filter((stock: any) => {
+                const q = searchQuery.toLowerCase();
+                return (
+                    stock.name?.toLowerCase().includes(q) ||
+                    stock.vendor?.toLowerCase().includes(q)
+                );
+            }),
+        [stocks, searchQuery]
+    );
 
-    const lowStockAlerts = useMemo(() =>
-        stocks.filter((stock: any) => Number(stock.current_stock) <= Number(stock.low_stock_threshold || 5)).length,
-        [stocks]);
+    const totalItems = useMemo(
+        () => filteredStocks.reduce((acc: number, stock: any) => acc + Number(stock.current_stock), 0),
+        [filteredStocks]
+    );
+
+    const lowStockAlerts = useMemo(
+        () =>
+            filteredStocks.filter(
+                (stock: any) => Number(stock.current_stock) <= Number(stock.low_stock_threshold || 5)
+            ).length,
+        [filteredStocks]
+    );
 
     return (
         <div className="space-y-6">
@@ -195,7 +219,12 @@ export default function StockPage() {
                     <div className="flex items-center gap-4">
                         <div className="relative flex-1">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                            <Input placeholder="Search inventory..." className="pl-10" />
+                            <Input
+                                placeholder="Search inventory..."
+                                className="pl-10"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
                         </div>
                     </div>
                 </CardHeader>
@@ -217,7 +246,7 @@ export default function StockPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {stocks.map((stock: any) => {
+                                {filteredStocks.map((stock: any) => {
                                     const isLow = Number(stock.current_stock) <= Number(stock.low_stock_threshold);
                                     return (
                                         <TableRow key={stock.id}>
