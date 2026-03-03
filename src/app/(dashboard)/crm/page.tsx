@@ -63,6 +63,7 @@ export default function CRMPage() {
     const [aiLoading, setAiLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [recordNotes, setRecordNotes] = useState("");
+    const [selectedTreatmentId, setSelectedTreatmentId] = useState<string>("");
     const [isSavingRecord, setIsSavingRecord] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [isAddPatientOpen, setIsAddPatientOpen] = useState(false);
@@ -102,6 +103,9 @@ export default function CRMPage() {
 
         if (treatmentData) {
             setTreatments(treatmentData);
+            if (!selectedTreatmentId && treatmentData.length > 0) {
+                setSelectedTreatmentId(treatmentData[0].id);
+            }
         }
 
         setLoading(false);
@@ -198,22 +202,26 @@ export default function CRMPage() {
     const handleAddMedicalRecord = async () => {
         if (!selectedPatient || !recordNotes.trim()) return;
 
+        const selectedTreatment = treatments.find(t => t.id === selectedTreatmentId);
+        const treatmentName = selectedTreatment?.name || "Consultation";
+
         setIsSavingRecord(true);
         const toastId = toast.loading("Omni AI is analyzing session sentiment...");
 
         try {
             // 1. AI Analysis
             const score = await analyzePatientSentiment(recordNotes);
-            const nextVisit = calculateNextVisit("General Consultation");
+            const nextVisit = calculateNextVisit(treatmentName);
             const draft = await generateEngagementDraft(
                 selectedPatient.full_name,
-                "Consultation",
+                treatmentName,
                 new Date().toLocaleDateString()
             );
 
             // 2. Insert to Supabase
             const { error: medErr } = await supabase.from("medical_records").insert({
                 patient_id: selectedPatient.id,
+                treatment_id: selectedTreatment?.id || null,
                 session_notes: recordNotes,
                 satisfaction_score: score,
                 next_visit_recommendation: nextVisit,
@@ -235,12 +243,13 @@ export default function CRMPage() {
             const newRecord = {
                 id: Math.random().toString(), // Temporary ID
                 patient_id: selectedPatient.id,
+                treatment_id: selectedTreatment?.id || null,
                 session_notes: recordNotes,
                 satisfaction_score: score,
                 next_visit_recommendation: nextVisit,
                 engagement_draft: draft,
                 created_at: new Date().toISOString(),
-                treatments: { name: "Consultation" }
+                treatments: { name: treatmentName }
             };
             setMedicalRecords(prev => [newRecord, ...prev]);
 
@@ -567,10 +576,26 @@ export default function CRMPage() {
                         </div>
 
                         <Card className="border-accent/10 bg-slate-50/50">
-                            <CardHeader className="py-4">
+                            <CardHeader className="py-4 flex flex-col gap-2">
                                 <CardTitle className="text-sm font-bold flex items-center gap-2">
                                     <MessageSquare className="w-4 h-4 text-accent" /> New Consultation Note
                                 </CardTitle>
+                                {treatments.length > 0 && (
+                                    <div className="flex flex-wrap items-center gap-3">
+                                        <Label className="text-xs text-slate-500">Linked Treatment</Label>
+                                        <select
+                                            className="h-9 rounded-md border border-slate-200 bg-white px-3 text-xs"
+                                            value={selectedTreatmentId}
+                                            onChange={(e) => setSelectedTreatmentId(e.target.value)}
+                                        >
+                                            {treatments.map((t) => (
+                                                <option key={t.id} value={t.id}>
+                                                    {t.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <textarea

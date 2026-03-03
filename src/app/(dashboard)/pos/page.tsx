@@ -45,8 +45,12 @@ export default function POSPage() {
         const { data: treatmentData } = await supabase.from("treatments").select("*");
         setTreatments(treatmentData || []);
 
-        // Fetch patients for selection
-        const { data: patientData } = await supabase.from("patients").select("id, full_name").limit(5);
+        // Fetch patients for selection (larger set for real clinic usage)
+        const { data: patientData } = await supabase
+            .from("patients")
+            .select("id, full_name")
+            .order("full_name")
+            .limit(1000);
         if (patientData && patientData.length > 0) {
             setPatients(patientData);
             setSelectedPatientId(patientData[0].id);
