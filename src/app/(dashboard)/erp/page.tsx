@@ -44,6 +44,16 @@ export default function StockPage() {
     const [scannedStock, setScannedStock] = useState<any>(null);
     const [stockUpdateAmount, setStockUpdateAmount] = useState("");
     const [isUpdatingStock, setIsUpdatingStock] = useState(false);
+    const [isStockDialogOpen, setIsStockDialogOpen] = useState(false);
+    const [editingStock, setEditingStock] = useState<any | null>(null);
+    const [stockForm, setStockForm] = useState({
+        name: "",
+        unit: "pcs",
+        current_stock: "",
+        low_stock_threshold: "",
+        vendor: "",
+        expiry_date: "",
+    });
 
     const fetchStocks = async () => {
         setLoading(true);
@@ -65,6 +75,80 @@ export default function StockPage() {
     useEffect(() => {
         fetchStocks();
     }, []);
+
+    const openNewStockDialog = () => {
+        setEditingStock(null);
+        setStockForm({
+            name: "",
+            unit: "pcs",
+            current_stock: "",
+            low_stock_threshold: "",
+            vendor: "",
+            expiry_date: "",
+        });
+        setIsStockDialogOpen(true);
+    };
+
+    const openEditStockDialog = (stock: any) => {
+        setEditingStock(stock);
+        setStockForm({
+            name: stock.name || "",
+            unit: stock.unit || "pcs",
+            current_stock: stock.current_stock?.toString() ?? "",
+            low_stock_threshold: stock.low_stock_threshold?.toString() ?? "",
+            vendor: stock.vendor || "",
+            expiry_date: stock.expiry_date || "",
+        });
+        setIsStockDialogOpen(true);
+    };
+
+    const handleSaveStock = async () => {
+        if (!stockForm.name.trim()) {
+            toast.error("Item name is required");
+            return;
+        }
+
+        const currentStockNum = Number(stockForm.current_stock || 0);
+        const thresholdNum = Number(stockForm.low_stock_threshold || 0);
+
+        if (Number.isNaN(currentStockNum) || Number.isNaN(thresholdNum)) {
+            toast.error("Stock and threshold must be valid numbers");
+            return;
+        }
+        if (currentStockNum < 0 || thresholdNum < 0) {
+            toast.error("Values cannot be negative");
+            return;
+        }
+
+        const payload: any = {
+            name: stockForm.name.trim(),
+            unit: stockForm.unit || "pcs",
+            current_stock: currentStockNum,
+            low_stock_threshold: thresholdNum,
+            vendor: stockForm.vendor.trim() || null,
+            expiry_date: stockForm.expiry_date || null,
+        };
+
+        let error;
+        if (editingStock) {
+            ({ error } = await supabase
+                .from("stocks")
+                .update(payload)
+                .eq("id", editingStock.id));
+        } else {
+            ({ error } = await supabase.from("stocks").insert(payload));
+        }
+
+        if (error) {
+            toast.error("Failed to save stock", { description: error.message });
+            return;
+        }
+
+        toast.success(editingStock ? "Stock updated" : "Stock created");
+        setIsStockDialogOpen(false);
+        setEditingStock(null);
+        fetchStocks();
+    };
 
     const handleAIPrediction = async () => {
         setAiLoading(true);
@@ -169,7 +253,7 @@ export default function StockPage() {
                         {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <BrainCircuit className="w-4 h-4" />}
                         AI Prediction
                     </Button>
-                    <Button className="bg-accent hover:bg-accent/90 gap-2">
+                    <Button className="bg-accent hover:bg-accent/90 gap-2" onClick={openNewStockDialog}>
                         <Plus className="w-4 h-4" />
                         Add New Stock
                     </Button>
@@ -274,7 +358,9 @@ export default function StockPage() {
                                                     <Button variant="outline" size="sm" onClick={() => setQrGeneratorConfig({ isOpen: true, id: stock.id, name: stock.name })}>
                                                         Print QR
                                                     </Button>
-                                                    <Button variant="ghost" size="sm">Edit</Button>
+                                                    <Button variant="ghost" size="sm" onClick={() => openEditStockDialog(stock)}>
+                                                        Edit
+                                                    </Button>
                                                 </div>
                                             </TableCell>
                                         </TableRow>
@@ -335,6 +421,90 @@ export default function StockPage() {
                         </Button>
                         <Button className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2" onClick={() => handleUpdateStock('in')} disabled={isUpdatingStock || !stockUpdateAmount || Number(stockUpdateAmount) <= 0}>
                             {isUpdatingStock ? <Loader2 className="w-4 h-4 animate-spin" /> : "+"} Stock In
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Stock Create / Edit Modal */}
+            <Dialog open={isStockDialogOpen} onOpenChange={(open) => { setIsStockDialogOpen(open); if (!open) setEditingStock(null); }}>
+                <DialogContent className="sm:max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle>{editingStock ? "Edit Stock Item" : "Add New Stock"}</DialogTitle>
+                        <DialogDescription>
+                            {editingStock
+                                ? "Update inventory metadata for this item."
+                                : "Register a new stock item for your clinic inventory."}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="stock-name">Item Name</Label>
+                            <Input
+                                id="stock-name"
+                                value={stockForm.name}
+                                onChange={(e) => setStockForm({ ...stockForm, name: e.target.value })}
+                                placeholder="Botox Type A 100U"
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="stock-unit">Unit</Label>
+                                <Input
+                                    id="stock-unit"
+                                    value={stockForm.unit}
+                                    onChange={(e) => setStockForm({ ...stockForm, unit: e.target.value })}
+                                    placeholder="vial / ml / pcs"
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="stock-vendor">Vendor</Label>
+                                <Input
+                                    id="stock-vendor"
+                                    value={stockForm.vendor}
+                                    onChange={(e) => setStockForm({ ...stockForm, vendor: e.target.value })}
+                                    placeholder="Distributor / Brand"
+                                />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="stock-current">Current Stock</Label>
+                                <Input
+                                    id="stock-current"
+                                    type="number"
+                                    min="0"
+                                    value={stockForm.current_stock}
+                                    onChange={(e) => setStockForm({ ...stockForm, current_stock: e.target.value })}
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="stock-threshold">Low Stock Threshold</Label>
+                                <Input
+                                    id="stock-threshold"
+                                    type="number"
+                                    min="0"
+                                    value={stockForm.low_stock_threshold}
+                                    onChange={(e) => setStockForm({ ...stockForm, low_stock_threshold: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="stock-expiry">Expiry Date (optional)</Label>
+                            <Input
+                                id="stock-expiry"
+                                type="date"
+                                value={stockForm.expiry_date}
+                                onChange={(e) => setStockForm({ ...stockForm, expiry_date: e.target.value })}
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => { setIsStockDialogOpen(false); setEditingStock(null); }}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleSaveStock} className="bg-accent hover:bg-accent/90">
+                            {editingStock ? "Save Changes" : "Create Stock"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
