@@ -13,7 +13,13 @@ import {
     Sparkles,
     TrendingUp,
     MessageSquare,
-    UserCog
+    UserCog,
+    Wallet,
+    CreditCard,
+    Stethoscope,
+    Briefcase,
+    Layers,
+    FileBox
 } from "lucide-react";
 
 import { LogOut } from "lucide-react";
@@ -24,9 +30,15 @@ const navigation = [
     { name: "Overview", href: "/", icon: LayoutDashboard },
     { name: "Admin Stats", href: "/admin/dashboard", icon: TrendingUp },
     { name: "Staff Management", href: "/admin/staff", icon: UserCog },
+    { name: "Doctor DB", href: "/admin/doctors", icon: Stethoscope },
+    { name: "Employee DB", href: "/admin/employees", icon: Briefcase },
+    { name: "Product DB", href: "/admin/products", icon: FileBox },
+    { name: "Package DB", href: "/admin/packages", icon: Layers },
     { name: "ERP (Inventory)", href: "/erp", icon: Package },
     { name: "CRM (Patients)", href: "/crm", icon: Users },
     { name: "POS (Sales)", href: "/pos", icon: ShoppingCart },
+    { name: "Deposits", href: "/deposits", icon: Wallet },
+    { name: "Global Payment", href: "/finance/payment", icon: CreditCard },
     { name: "Engagement", href: "/engagement", icon: MessageSquare },
     { name: "Settings", href: "/settings", icon: Settings },
 ];
@@ -60,8 +72,16 @@ export function Sidebar() {
     // Filter navigation based on role
     const filteredNavigation = navigation.filter(item => {
         if (role === 'admin') return true;
-        // Staff and Doctors cannot see Admin Stats, Staff Management or Settings
-        const restricted = ['Admin Stats', 'Staff Management', 'Settings'];
+        // Staff and Doctors cannot see Admin Stats, Staff Management, Master Data DBs or Settings
+        const restricted = [
+            'Admin Stats',
+            'Staff Management',
+            'Settings',
+            'Doctor DB',
+            'Employee DB',
+            'Product DB',
+            'Package DB'
+        ];
         return !restricted.includes(item.name);
     });
 

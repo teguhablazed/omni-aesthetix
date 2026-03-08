@@ -160,7 +160,7 @@ export default function EngagementCenter() {
                                         <div>
                                             <h3 className="text-xl font-bold text-primary">{item.patients?.full_name}</h3>
                                             <p className="text-sm text-slate-400 flex items-center gap-2">
-                                                <Calendar className="w-3 h-3" /> Last Visit: {new Date(item.created_at).toLocaleDateString()}
+                                                <Clock className="w-3 h-3" /> Last Visit: {new Date(item.created_at).toLocaleDateString()}
                                             </p>
                                         </div>
                                     </div>

@@ -69,8 +69,13 @@ export default function CRMPage() {
     const [isAddPatientOpen, setIsAddPatientOpen] = useState(false);
     const [newPatient, setNewPatient] = useState({
         full_name: "",
+        nik: "",
         email: "",
         phone: "",
+        phone_2: "",
+        address: "",
+        emergency_contact_name: "",
+        emergency_contact_phone: "",
         age: "",
         gender: "Female"
     });
@@ -213,7 +218,7 @@ export default function CRMPage() {
             const score = await analyzePatientSentiment(recordNotes);
             const nextVisit = calculateNextVisit(treatmentName);
             const draft = await generateEngagementDraft(
-                selectedPatient.full_name,
+                selectedPatient?.full_name || "Patient",
                 treatmentName,
                 new Date().toLocaleDateString()
             );
@@ -272,8 +277,13 @@ export default function CRMPage() {
         try {
             const { data, error } = await supabase.from("patients").insert({
                 full_name: newPatient.full_name,
+                nik: newPatient.nik,
                 email: newPatient.email,
                 phone: newPatient.phone,
+                phone_2: newPatient.phone_2,
+                address: newPatient.address,
+                emergency_contact_name: newPatient.emergency_contact_name,
+                emergency_contact_phone: newPatient.emergency_contact_phone,
                 age: parseInt(newPatient.age) || null,
                 gender: newPatient.gender
             }).select().single();
@@ -286,8 +296,13 @@ export default function CRMPage() {
             setIsAddPatientOpen(false);
             setNewPatient({
                 full_name: "",
+                nik: "",
                 email: "",
                 phone: "",
+                phone_2: "",
+                address: "",
+                emergency_contact_name: "",
+                emergency_contact_phone: "",
                 age: "",
                 gender: "Female"
             });
@@ -324,7 +339,11 @@ export default function CRMPage() {
     };
 
     const filteredPatients = useMemo(() =>
-        patients.filter(p => p.full_name?.toLowerCase().includes(searchQuery.toLowerCase())),
+        patients.filter(p =>
+            p.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            p.nik?.includes(searchQuery) ||
+            p.no_rm?.toLowerCase().includes(searchQuery.toLowerCase())
+        ),
         [patients, searchQuery]);
 
     if (loading) {
@@ -347,7 +366,7 @@ export default function CRMPage() {
                                 <UserPlus className="w-5 h-5" />
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="sm:max-w-[425px]">
+                        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
                             <DialogHeader>
                                 <DialogTitle>Add New Patient</DialogTitle>
                                 <DialogDescription>
@@ -355,14 +374,25 @@ export default function CRMPage() {
                                 </DialogDescription>
                             </DialogHeader>
                             <div className="grid gap-4 py-4">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="name">Full Name</Label>
-                                    <Input
-                                        id="name"
-                                        placeholder="Jane Doe"
-                                        value={newPatient.full_name}
-                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewPatient({ ...newPatient, full_name: e.target.value })}
-                                    />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="nik">NIK (ID Number)</Label>
+                                        <Input
+                                            id="nik"
+                                            placeholder="16-digit NIK"
+                                            value={newPatient.nik}
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewPatient({ ...newPatient, nik: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="name">Full Name</Label>
+                                        <Input
+                                            id="name"
+                                            placeholder="Jane Doe"
+                                            value={newPatient.full_name}
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewPatient({ ...newPatient, full_name: e.target.value })}
+                                        />
+                                    </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="grid gap-2">
@@ -388,28 +418,70 @@ export default function CRMPage() {
                                         </select>
                                     </div>
                                 </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="email">Email</Label>
-                                    <Input
-                                        id="email"
-                                        type="email"
-                                        placeholder="jane@example.com"
-                                        value={newPatient.email}
-                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewPatient({ ...newPatient, email: e.target.value })}
-                                    />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="email">Email</Label>
+                                        <Input
+                                            id="email"
+                                            type="email"
+                                            placeholder="jane@example.com"
+                                            value={newPatient.email}
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewPatient({ ...newPatient, email: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="phone">Phone 1</Label>
+                                        <Input
+                                            id="phone"
+                                            placeholder="+62..."
+                                            value={newPatient.phone}
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewPatient({ ...newPatient, phone: e.target.value })}
+                                        />
+                                    </div>
                                 </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="phone">Phone</Label>
-                                    <Input
-                                        id="phone"
-                                        placeholder="+62..."
-                                        value={newPatient.phone}
-                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewPatient({ ...newPatient, phone: e.target.value })}
-                                    />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="phone_2">Phone 2 (Optional)</Label>
+                                        <Input
+                                            id="phone_2"
+                                            placeholder="+62..."
+                                            value={newPatient.phone_2}
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewPatient({ ...newPatient, phone_2: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="address">Address</Label>
+                                        <Input
+                                            id="address"
+                                            placeholder="Current Address"
+                                            value={newPatient.address}
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewPatient({ ...newPatient, address: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="emergency_name">Emergency Contact Name</Label>
+                                        <Input
+                                            id="emergency_name"
+                                            placeholder="Contact Name"
+                                            value={newPatient.emergency_contact_name}
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewPatient({ ...newPatient, emergency_contact_name: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="emergency_phone">Emergency Contact Phone</Label>
+                                        <Input
+                                            id="emergency_phone"
+                                            placeholder="Contact Phone"
+                                            value={newPatient.emergency_contact_phone}
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewPatient({ ...newPatient, emergency_contact_phone: e.target.value })}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                             <DialogFooter>
-                                <Button className="bg-accent hover:bg-accent/90" onClick={handleAddPatient} disabled={isAddingPatient}>
+                                <Button className="bg-accent hover:bg-accent/90 w-full" onClick={handleAddPatient} disabled={isAddingPatient}>
                                     {isAddingPatient ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                                     Register Patient
                                 </Button>
@@ -421,7 +493,7 @@ export default function CRMPage() {
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <Input
-                        placeholder="Search patients..."
+                        placeholder="Search by Name, NIK, or RM..."
                         className="pl-10"
                         value={searchQuery}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
@@ -513,17 +585,27 @@ export default function CRMPage() {
                         <div className="flex justify-between items-start">
                             <div className="flex gap-6 items-center">
                                 <Avatar className="w-20 h-20 border-2 border-accent/20">
-                                    <AvatarImage src={selectedPatient.photo_url || `https://api.dicebear.com/7.x/initials/svg?seed=${selectedPatient.full_name}`} />
-                                    <AvatarFallback>{selectedPatient.full_name?.substring(0, 2).toUpperCase()}</AvatarFallback>
+                                    <AvatarImage src={selectedPatient?.photo_url || `https://api.dicebear.com/7.x/initials/svg?seed=${selectedPatient?.full_name || 'Guest'}`} />
+                                    <AvatarFallback>{(selectedPatient?.full_name || "??").substring(0, 2).toUpperCase()}</AvatarFallback>
                                 </Avatar>
                                 <div>
                                     <div className="flex items-center gap-3">
-                                        <h1 className="text-3xl font-bold text-primary">{selectedPatient.full_name}</h1>
+                                        <h1 className="text-3xl font-bold text-primary">{selectedPatient?.full_name || "Unnamed Patient"}</h1>
                                         <Badge variant="outline" className="text-accent border-accent">
-                                            {selectedPatient.risk_level || "Active Patient"}
+                                            {selectedPatient?.risk_level || "Active Patient"}
                                         </Badge>
                                     </div>
-                                    <p className="text-slate-500 flex items-center gap-2 mt-1">
+                                    <div className="flex gap-4 mt-2 mb-1">
+                                        <Badge variant="secondary" className="bg-slate-100/80 text-slate-600 font-mono tracking-wider border-slate-200">
+                                            <span className="text-xs font-bold text-slate-400 mr-2">NO. RM:</span>
+                                            {selectedPatient?.no_rm || "TBA"}
+                                        </Badge>
+                                        <Badge variant="secondary" className="bg-slate-100/80 text-slate-600 font-mono tracking-wider border-slate-200">
+                                            <span className="text-xs font-bold text-slate-400 mr-2">NIK:</span>
+                                            {selectedPatient?.nik || "Not provided"}
+                                        </Badge>
+                                    </div>
+                                    <p className="text-slate-500 flex items-center gap-2 mt-2">
                                         <User className="w-4 h-4" /> {selectedPatient.age || "??"} years old • {selectedPatient.gender || "Unknown"}
                                     </p>
                                     <p className="text-slate-500 flex items-center gap-2">
@@ -546,7 +628,7 @@ export default function CRMPage() {
                                     variant="outline"
                                     className="gap-2 border-slate-200 text-slate-600 hover:bg-slate-50"
                                     onClick={() => generateSummaryPDF({
-                                        patientName: selectedPatient.full_name,
+                                        patientName: selectedPatient?.full_name || "Patient",
                                         age: selectedPatient.age || 0,
                                         gender: selectedPatient.gender || "N/A",
                                         records: medicalRecords.map(r => ({
@@ -635,7 +717,7 @@ export default function CRMPage() {
 
                             <TabsContent value="compare" className="mt-6">
                                 <ProgressAnalysis
-                                    patientName={selectedPatient.full_name}
+                                    patientName={selectedPatient?.full_name || "Patient"}
                                     photos={patientPhotos}
                                 />
                             </TabsContent>
@@ -729,7 +811,7 @@ export default function CRMPage() {
             <ConsentDialog
                 isOpen={isConsentOpen}
                 onClose={() => setIsConsentOpen(false)}
-                patientName={selectedPatient.full_name}
+                patientName={selectedPatient?.full_name || "Patient"}
                 treatmentName="General Consultation" // Dynamic would be better
                 onConsentSigned={(sig) => {
                     setCurrentSignature(sig);
