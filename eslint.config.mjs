@@ -12,6 +12,18 @@ const compat = new FlatCompat({
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
+    ignores: [
+      "**/test_rpc.js",
+      "**/simulate_workflow.js",
+      "**/simulate_workflow.ts",
+      "**/check_db.js",
+      "**/check_db.ts",
+      "**/inspect_all_schemas.js",
+      "**/debug_schema.js",
+      "**/*.sql",
+    ],
+  },
+  {
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-unused-vars": "warn",

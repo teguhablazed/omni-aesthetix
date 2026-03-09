@@ -9,7 +9,6 @@ import {
     Loader2,
     CheckCircle2,
     FileText,
-    Wallet,
     ChevronRight,
     ChevronLeft,
     Check,
